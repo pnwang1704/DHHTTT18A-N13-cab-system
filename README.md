@@ -41,7 +41,7 @@ Monorepo cho hệ thống **Cab Booking System** (ứng dụng đặt xe kiểu 
 
 ## 📁 Cấu trúc thư mục
 
-Cấu trúc monorepo:
+Cấu trúc monorepo   :
 
 ```bash
 cab-booking-system/
