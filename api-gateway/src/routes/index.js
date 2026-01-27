@@ -5,12 +5,28 @@ const authMiddleware = require('../middlewares/auth');
 
 const router = express.Router();
 
-// Helper tạo proxy
+// Helper tạo proxy, đồng thời forward thông tin user (nếu có)
 const createServiceProxy = (target) =>
   createProxyMiddleware({
     target,
     changeOrigin: true,
-    pathRewrite: (path, req) => path // có thể custom thêm nếu cần
+    onProxyReq: (proxyReq, req, res) => {
+      // Nếu đã qua authMiddleware và có req.user
+      if (req.user) {
+        proxyReq.setHeader('x-user-id', req.user.userId);
+        proxyReq.setHeader('x-user-email', req.user.email);
+        proxyReq.setHeader('x-user-role', req.user.role);
+      }
+    },
+    onError: (err, req, res) => {
+      console.error('[API-GATEWAY] Proxy error:', err.message);
+      if (!res.headersSent) {
+        res.status(502).json({
+          message: 'Bad Gateway: target service unavailable',
+          target
+        });
+      }
+    }
   });
 
 // Auth routes (không yêu cầu token)
