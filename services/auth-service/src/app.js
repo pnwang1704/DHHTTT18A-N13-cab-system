@@ -1,27 +1,24 @@
-﻿const express = require('express');
-const morgan = require('morgan');
-const authRoutes = require('./routes/auth.routes');
-const errorHandler = require('./middlewares/error.middleware');
+const express = require("express");
+const helmet = require("helmet");
+const cors = require("cors");
 
-const app = express();
+const { errorHandler } = require("./middlewares/errorHandler");
+const { authRoutes } = require("./routes/auth.routes");
 
-app.use(express.json());
-app.use(morgan('dev'));
+function createApp(deps) {
+  const app = express();
 
-// Health check
-app.get('/health', (req, res) => {
-  res.json({ status: 'ok', service: 'auth-service' });
-});
+  app.use(helmet());
+  app.use(cors());
+  app.use(express.json({ limit: "1mb" }));
 
-// API routes
-app.use('/auth', authRoutes);
+  app.get("/health", (req, res) => res.status(200).json({ ok: true }));
 
-// 404
-app.use((req, res, next) => {
-  res.status(404).json({ message: 'Not Found' });
-});
+  app.use("/auth", authRoutes(deps));
 
-// Error handler
-app.use(errorHandler);
+  app.use(errorHandler);
 
-module.exports = app;
+  return app;
+}
+
+module.exports = { createApp };

@@ -1,18 +1,34 @@
-﻿require('dotenv').config();
-const app = require('./app');
-// const { connectDB } = require('./config/db');
+const { env } = require("./config/env");
+const { loadKeys } = require("./config/jwt");
+const { withTx } = require("./config/db");
 
-const PORT = process.env.PORT || 4001;
+const authSvc = require("./services/auth.service");
+const tokenSvc = require("./services/token.service");
+const { authMiddleware } = require("./middlewares/jwt.middleware");
+const { authController } = require("./controllers/auth.controller");
+const { createApp } = require("./app");
 
-(async () => {
-  try {
-    // await connectDB();
-    console.log('[AUTH-SERVICE] Starting service...');
-    app.listen(PORT, () => {
-      console.log('Auth Service listening on port ' + PORT);
-    });
-  } catch (err) {
-    console.error('Failed to start Auth Service', err);
-    process.exit(1);
-  }
-})();
+async function main() {
+  const keys = loadKeys();
+
+  const deps = {
+    withTx,
+    keys,
+    authSvc,
+    tokenSvc,
+    authMiddleware: authMiddleware(keys.publicKey),
+  };
+
+  deps.controller = authController(deps);
+
+  const app = createApp(deps);
+
+  app.listen(env.port, () => {
+    console.log(`[auth-service] listening on :${env.port} (${env.nodeEnv})`);
+  });
+}
+
+main().catch((e) => {
+  console.error("[auth-service] fatal error", e);
+  process.exit(1);
+});

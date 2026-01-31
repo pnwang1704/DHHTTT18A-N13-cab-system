@@ -1,24 +1,42 @@
-﻿const service = require('../services/auth.service');
+const { created, ok } = require("../utils/response");
 
-async function listAuths(req, res, next) {
-  try {
-    const items = await service.listAuths();
-    res.json(items);
-  } catch (err) {
-    next(err);
-  }
+function authController(deps) {
+  const { withTx, keys } = deps;
+
+  return {
+    register: async (req, res) => {
+      const data = await withTx(async (client) =>
+        deps.authSvc.register(client, keys, req, req.body),
+      );
+      return created(res, data);
+    },
+    login: async (req, res) => {
+      const data = await withTx(async (client) =>
+        deps.authSvc.login(client, keys, req, req.body),
+      );
+      return ok(res, data);
+    },
+    refresh: async (req, res) => {
+      const data = await withTx(async (client) =>
+        deps.authSvc.refresh(client, keys, req, req.body),
+      );
+      return ok(res, data);
+    },
+    logout: async (req, res) => {
+      const data = await withTx(async (client) =>
+        deps.authSvc.logout(client, req.body),
+      );
+      return ok(res, data);
+    },
+    me: async (req, res) => {
+      const data = deps.authSvc.me(req.user);
+      return ok(res, data);
+    },
+    jwks: async (req, res) => {
+      const jwks = await deps.tokenSvc.buildJWKS(keys.publicKey);
+      return res.status(200).json(jwks);
+    },
+  };
 }
 
-async function createAuth(req, res, next) {
-  try {
-    const item = await service.createAuth(req.body);
-    res.status(201).json(item);
-  } catch (err) {
-    next(err);
-  }
-}
-
-module.exports = {
-  listAuths,
-  createAuth
-};
+module.exports = { authController };
