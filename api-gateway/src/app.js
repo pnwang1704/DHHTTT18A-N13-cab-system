@@ -1,21 +1,24 @@
 const express = require('express');
+const cors = require('cors');
 const loggingMiddleware = require('./middlewares/logging');
 const routes = require('./routes');
-const cors = require('cors');
+const { globalLimiter } = require('./middlewares/rateLimit');
 
 const app = express();
 
 app.use(express.json());
 app.use(loggingMiddleware);
 
-// CORS – cho FE gọi đến gateway
 app.use(
   cors({
-    origin: '*', // sau này có thể giới hạn domain FE
+    origin: '*',
     methods: 'GET,HEAD,PUT,PATCH,POST,DELETE',
     allowedHeaders: 'Content-Type, Authorization'
   })
 );
+
+// ✅ Rate limit toàn hệ thống
+app.use(globalLimiter);
 
 // Health check
 app.get('/health', (req, res) => {
@@ -33,16 +36,8 @@ app.use((req, res, next) => {
 // Error handler
 app.use((err, req, res, next) => {
   console.error('[API-GATEWAY] Error:', err);
-
   const statusCode = err.statusCode || 500;
-  const message = err.message || 'Internal Server Error';
-
-  res.status(statusCode).json({
-    statusCode,
-    message,
-    path: req.originalUrl,
-    timestamp: new Date().toISOString()
-  });
+  res.status(statusCode).json({ message: err.message || 'Internal Server Error' });
 });
 
 module.exports = app;

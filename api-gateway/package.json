@@ -11,6 +11,7 @@
     "cors": "^2.8.6",
     "dotenv": "^16.6.1",
     "express": "^4.22.1",
+    "express-rate-limit": "^8.2.1",
     "http-proxy-middleware": "^2.0.9",
     "jsonwebtoken": "^9.0.3",
     "morgan": "^1.10.1"
